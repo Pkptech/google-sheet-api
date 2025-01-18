@@ -1,32 +1,35 @@
-require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
+const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-const SHEET_ID = process.env.SHEET_ID; 
-const API_KEY = process.env.GOOGLE_API_KEY;
+// Enable CORS for all origins (adjust if needed)
+app.use(cors());
+app.use(express.json());  // For parsing application/json
 
-// Fetch Google Sheets Data
-app.get('/api/data', async (req, res) => {
+// Handle POST request at /api/data
+app.post('/api/data', async (req, res) => {
     try {
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Sheet1?key=${API_KEY}`;
-        const response = await axios.get(url);
-        res.json(response.data);
+        const { name, email, message } = req.body;
+
+        // Your logic to append data to Google Sheets
+        const values = [[name, email, message]];
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${process.env.SHEET_ID}/values/Sheet1:append?valueInputOption=RAW&key=${process.env.API_KEY}`;
+
+        const response = await axios.post(url, { values });
+        
+        // Respond with JSON
+        res.json({ success: true, data: response.data });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error(error);
+        res.status(500).json({ error: "Something went wrong!" });
     }
 });
 
-// Render Home Page
-app.get('/', (req, res) => {
-    res.send('Google Sheets API is running 🚀');
+// Make sure to specify the correct port
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
-
-// Start Server
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-const cors = require("cors");
-
-// Enable CORS for all origins
-app.use(cors());
